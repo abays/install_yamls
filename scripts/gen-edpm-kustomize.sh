@@ -72,6 +72,15 @@ patches:
           subnetName: subnet1
         - name: Tenant
           subnetName: subnet1
+    - op: replace
+      path: /spec/roles/edpm-compute/nodeTemplate/ansibleVars/ctlplane_gateway_ip
+      value: ${EDPM_DEFAULT_GW}
+    - op: replace
+      path: /spec/roles/edpm-compute/nodeTemplate/ansibleVars/ctlplane_host_routes
+      value: ${EDPM_CTLPLANE_HOST_ROUTES}
+    - op: replace
+      path: /spec/roles/edpm-compute/nodeTemplate/ansibleVars/ctlplne_dns_nameservers
+      value: ${EDPM_CTLPLANE_DNS_NAMESERVERS}
     - op: add
       path: /spec/roles/edpm-compute/services/0
       value: repo-setup

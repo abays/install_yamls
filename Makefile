@@ -300,10 +300,12 @@ DATAPLANE_REGISTRY_URL                           ?=quay.io/podified-antelope-cen
 DATAPLANE_CONTAINER_TAG                          ?=current-podified
 DATAPLANE_OVN_METADATA_AGENT_BIND_HOST           ?=127.0.0.1
 DATAPLANE_SINGLE_NODE                            ?=true
-DATAPLANE_KUTTL_CONF      ?= ${OPERATOR_BASE_DIR}/dataplane-operator/kuttl-test.yaml
-DATAPLANE_KUTTL_DIR       ?= ${OPERATOR_BASE_DIR}/dataplane-operator/tests/kuttl/tests
-DATAPLANE_KUTTL_NAMESPACE ?= dataplane-kuttl-tests
-DATAPLANE_DEFAULT_GW      ?= 192.168.122.1
+DATAPLANE_KUTTL_CONF                             ?= ${OPERATOR_BASE_DIR}/dataplane-operator/kuttl-test.yaml
+DATAPLANE_KUTTL_DIR                              ?= ${OPERATOR_BASE_DIR}/dataplane-operator/tests/kuttl/tests
+DATAPLANE_KUTTL_NAMESPACE                        ?= dataplane-kuttl-tests
+DATAPLANE_DEFAULT_GW                             ?= 192.168.122.1
+DATAPLANE_CTLPLANE_HOST_ROUTES                   ?= [{\"ip_netmask\":\"0.0.0.0/0\",\"next_hop\":\"192.168.122.1\"}]
+DATAPLANE_CTLPLANE_DNS_NAMESERVERS               ?= ['192.168.122.1']
 
 # Manila
 MANILA_IMG            ?= quay.io/openstack-k8s-operators/manila-operator-index:latest
@@ -572,6 +574,9 @@ edpm_deploy_prep: export EDPM_REGISTRY_URL=${DATAPLANE_REGISTRY_URL}
 edpm_deploy_prep: export EDPM_CONTAINER_TAG=${DATAPLANE_CONTAINER_TAG}
 edpm_deploy_prep: export EDPM_OVN_METADATA_AGENT_PROXY_SHARED_SECRET=${METADATA_SHARED_SECRET}
 edpm_deploy_prep: export EDPM_OVN_METADATA_AGENT_BIND_HOST=${DATAPLANE_OVN_METADATA_AGENT_BIND_HOST}
+edpm_deploy_prep: export EDPM_DEFAULT_GW=${DATAPLANE_DEFAULT_GW}
+edpm_deploy_prep: export EDPM_CTLPLANE_HOST_ROUTES=${DATAPLANE_CTLPLANE_HOST_ROUTES}
+edpm_deploy_prep: export EDPM_CTLPLANE_DNS_NAMESERVERS=${DATAPLANE_CTLPLANE_DNS_NAMESERVERS}
 edpm_deploy_prep: edpm_deploy_cleanup ## prepares the CR to install the data plane
 	$(eval $(call vars,$@,dataplane))
 	mkdir -p ${OPERATOR_BASE_DIR} ${OPERATOR_DIR} ${DEPLOY_DIR}
@@ -609,6 +614,9 @@ edpm_deploy_baremetal_prep: export EDPM_REGISTRY_URL=${DATAPLANE_REGISTRY_URL}
 edpm_deploy_baremetal_prep: export EDPM_CONTAINER_TAG=${DATAPLANE_CONTAINER_TAG}
 edpm_deploy_baremetal_prep: export EDPM_OVN_METADATA_AGENT_PROXY_SHARED_SECRET=${METADATA_SHARED_SECRET}
 edpm_deploy_baremetal_prep: export EDPM_OVN_METADATA_AGENT_BIND_HOST=${DATAPLANE_OVN_METADATA_AGENT_BIND_HOST}
+edpm_deploy_baremetal_prep: export EDPM_DEFAULT_GW=${DATAPLANE_DEFAULT_GW}
+edpm_deploy_baremetal_prep: export EDPM_CTLPLANE_HOST_ROUTES=${DATAPLANE_CTLPLANE_HOST_ROUTES}
+edpm_deploy_baremetal_prep: export EDPM_CTLPLANE_DNS_NAMESERVERS=${DATAPLANE_CTLPLANE_DNS_NAMESERVERS}
 edpm_deploy_baremetal_prep: edpm_deploy_cleanup ## prepares the CR to install the data plane
 	$(eval $(call vars,$@,dataplane))
 	mkdir -p ${OPERATOR_BASE_DIR} ${OPERATOR_DIR} ${DEPLOY_DIR}
