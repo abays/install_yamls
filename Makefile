@@ -94,6 +94,8 @@ OPENSTACK_REPO               ?= https://github.com/openstack-k8s-operators/opens
 OPENSTACK_BRANCH             ?= ${OPENSTACK_K8S_BRANCH}
 OPENSTACK_COMMIT_HASH        ?=
 
+OPENSTACK_INIT               ?= config/samples/operator_v1beta1_openstack.yaml
+
 ifeq ($(NETWORK_ISOLATION), true)
 ifeq ($(DBSERVICE), galera)
 OPENSTACK_CTLPLANE           ?= $(if $(findstring 3,$(GALERA_REPLICAS)),config/samples/core_v1beta1_openstackcontrolplane_galera_network_isolation_3replicas.yaml,config/samples/core_v1beta1_openstackcontrolplane_galera_network_isolation.yaml)
@@ -108,6 +110,7 @@ OPENSTACK_CTLPLANE           ?= config/samples/core_v1beta1_openstackcontrolplan
 endif
 endif
 
+OPENSTACK_INIT_CR            ?= ${OPERATOR_BASE_DIR}/openstack-operator/${OPENSTACK_INIT}
 OPENSTACK_CR                 ?= ${OPERATOR_BASE_DIR}/openstack-operator/${OPENSTACK_CTLPLANE}
 OPENSTACK_BUNDLE_IMG         ?= quay.io/openstack-k8s-operators/openstack-operator-bundle:${OPENSTACK_K8S_TAG}
 OPENSTACK_STORAGE_BUNDLE_IMG ?= quay.io/openstack-k8s-operators/openstack-operator-storage-bundle:${OPENSTACK_K8S_TAG}
@@ -761,6 +764,8 @@ openstack_deploy_prep: export CTLPLANE_IPV6_DNS_SERVER=${NNCP_DNS_SERVER_IPV6}
 endif
 openstack_deploy_prep: openstack_deploy_cleanup openstack_repo ## prepares the CR to install the service based on the service sample file OPENSTACK
 	$(eval $(call vars,$@,openstack))
+	cp ${OPENSTACK_INIT_CR} ${DEPLOY_DIR}
+	oc kustomize ${DEPLOY_DIR} | oc wait --for condition=Ready --timeout=$(TIMEOUT) -f -
 	cp ${OPENSTACK_CR} ${DEPLOY_DIR}
 ifneq (${OPENSTACK_NEUTRON_CUSTOM_CONF},)
 	cp ${OPENSTACK_NEUTRON_CUSTOM_CONF} ${NEUTRON_CUSTOM_CONF}
