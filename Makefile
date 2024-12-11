@@ -2343,10 +2343,7 @@ endif
 nncp_cleanup: export INTERFACE=${NNCP_INTERFACE}
 nncp_cleanup: ## unconfigured nncp configuration on worker node and deletes the nncp resource
 	$(eval $(call vars,$@,nncp))
-	sed -i 's/state: up/state: absent/' ${DEPLOY_DIR}/*_nncp.yaml
-	oc apply -f ${DEPLOY_DIR}/
-	oc wait nncp -l osp/interface=${NNCP_INTERFACE} --for condition=available --timeout=$(NNCP_CLEANUP_TIMEOUT)
-	oc delete --ignore-not-found=true -f ${DEPLOY_DIR}/
+	NNCP_INTERFACE=${NNCP_INTERFACE} NNCP_CLEANUP_TIMEOUT=${NNCP_CLEANUP_TIMEOUT} bash scripts/cleanup-nncp.sh
 	${CLEANUP_DIR_CMD} ${DEPLOY_DIR}
 
 .PHONY: netattach
