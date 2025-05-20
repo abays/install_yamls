@@ -2364,7 +2364,7 @@ else
 endif
 
 .PHONY: nncp_with_retries
-nncp_with_retries: nncp_dns ## Deploy NNCP with retries
+nncp_with_retries: ## Deploy NNCP with retries
 	 $(eval $(call vars,$@))
 	bash scripts/retry_make_nncp.sh $(NNCP_RETRIES)
 
@@ -2381,10 +2381,12 @@ endif
 	oc apply -f ${DEPLOY_DIR}/
 	timeout ${NNCP_TIMEOUT} bash -c "while ! (oc wait nncp -l osp/interface=nncp-dns --for jsonpath='{.status.conditions[0].reason}'=SuccessfullyConfigured); do sleep 10; done"
 	oc delete nncp -l osp/interface=nncp-dns
+	${CLEANUP_DIR_CMD} ${DEPLOY_DIR}
 
 .PHONY: nncp
 nncp: export INTERFACE=${NNCP_INTERFACE}
 nncp: export BRIDGE_NAME=${NNCP_BRIDGE}
+nncp: export GATEWAY=${NNCP_GATEWAY}
 nncp: export INTERNALAPI_PREFIX=${NETWORK_INTERNALAPI_ADDRESS_PREFIX}
 nncp: export NNCP_INTERNALAPI_HOST_ROUTES=${INTERNALAPI_HOST_ROUTES}
 nncp: export STORAGE_PREFIX=${NETWORK_STORAGE_ADDRESS_PREFIX}

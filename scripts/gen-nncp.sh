@@ -51,6 +51,7 @@ echo DEPLOY_DIR ${DEPLOY_DIR}
 echo WORKERS ${WORKERS}
 echo INTERFACE ${INTERFACE}
 echo BRIDGE_NAME ${BRIDGE_NAME}
+echo GATEWAY ${GATEWAY}
 echo INTERFACE_BGP_1 ${INTERFACE_BGP_1}
 echo INTERFACE_BGP_2 ${INTERFACE_BGP_2}
 echo INTERFACE_MTU ${INTERFACE_MTU}
@@ -121,17 +122,22 @@ EOF_CAT
         - ${DNS_SERVER_IPV6}
 EOF_CAT
     fi
-    if [ -n "$NNCP_ADDITIONAL_HOST_ROUTES" ] || [ -n "$NNCP_INTERNALAPI_HOST_ROUTES" ] || \
-       [ -n "$NNCP_STORAGE_HOST_ROUTES" ] || [ -n "$NNCP_STORAGEMGMT_HOST_ROUTES" ] || \
-       [ -n "$NNCP_TENANT_HOST_ROUTES" ]; then
-    #
-    # Host Routes
-    #
+    
     cat >> ${DEPLOY_DIR}/${WORKER}_nncp.yaml <<EOF_CAT
     routes:
       config:
 EOF_CAT
+    if [ -n "$IPV4_ENABLED" ]; then
+      cat >> ${DEPLOY_DIR}/${WORKER}_nncp.yaml <<EOF_CAT
+      - destination: 0.0.0.0/0
+        next-hop-address: ${GATEWAY}
+        next-hop-interface: ${BRIDGE_NAME}
+        metric: 430
+EOF_CAT
     fi
+    #
+    # Host Routes
+    #
         if [ -n "$NNCP_ADDITIONAL_HOST_ROUTES" ]; then
             for route in $NNCP_ADDITIONAL_HOST_ROUTES; do
                 cat >> ${DEPLOY_DIR}/${WORKER}_nncp.yaml <<EOF_CAT
@@ -493,6 +499,11 @@ EOF_CAT
     # ctlplane interface (untagged)
     #
     cat >> ${DEPLOY_DIR}/${WORKER}_nncp.yaml <<EOF_CAT
+    - description: ctlplane interface
+      mtu: ${INTERFACE_MTU}
+      name: ${INTERFACE}
+      state: up
+      type: ethernet
     - description: Configuring Bridge ${BRIDGE_NAME} with interface ${INTERFACE}
       name: ${BRIDGE_NAME}
       mtu: ${INTERFACE_MTU}

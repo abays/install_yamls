@@ -5,7 +5,7 @@ retries="${1:-5}"  # Number of retries with a default value of 5
 
 while true; do
     make nncp && break
-    make nncp_cleanup
+    make nncp_cleanup || true
     n=$((n+1))
     if (( n >= retries )); then
         echo "Failed to run 'make nncp' target. Aborting"
