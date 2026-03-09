@@ -770,6 +770,21 @@ ifeq (,$(findstring baremetalhosts.metal3.io, ${BMO_CRDS}))
 	BMO_SETUP ?= true
 endif
 
+##@ KUBE-RBAC-PROXY OVERRIDE
+# Needed for FR1-FR3 because the kube-rbac-proxy image is not available in gcr.io/kubebuilder
+# anymore, yet our FR1-FR3 builds still try to use it.  This overrides the cluster-wide image
+# source to use the quay.io version.  For FR4+, this is not needed (since kube-rbac-proxy is
+# no longer used), but it's harmless to apply.
+KRBAC_PROXY_SRC ?= gcr.io/kubebuilder/kube-rbac-proxy
+KRBAC_PROXY_DEST ?= quay.io/openstack-k8s-operators/kube-rbac-proxy
+
+.PHONY: kube_rbac_proxy_override
+kube_rbac_proxy_override: ## provides alternate (and available) image source for kube-rbac-proxy in case it's needed (for older versions of OpenStack Operator)
+	KRBAC_PROXY_SRC=$(KRBAC_PROXY_SRC) \
+	KRBAC_PROXY_DEST=$(KRBAC_PROXY_DEST) \
+	OUT_DIR=$(OUT)/kube_rbac_proxy_override \
+	bash scripts/gen-kube-rbac-proxy-override.sh
+
 ##@ OPENSTACK
 
 OPENSTACK_PREP_DEPS := validate_marketplace
@@ -780,6 +795,7 @@ OPENSTACK_PREP_DEPS += $(if $(findstring true,$(INSTALL_CERT_MANAGER)), certmana
 OPENSTACK_PREP_DEPS += $(if $(findstring true,$(NETWORK_ISOLATION)), netattach metallb_config)
 OPENSTACK_PREP_DEPS += $(if $(findstring true,$(NETWORK_BGP)), netattach metallb_config)
 OPENSTACK_PREP_DEPS += $(if $(findstring true,$(BMO_SETUP)), crc_bmo_setup)
+OPENSTACK_PREP_DEPS += kube_rbac_proxy_override
 
 .PHONY: openstack_prep
 openstack_prep: export IMAGE=${OPENSTACK_IMG}
