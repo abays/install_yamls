@@ -99,6 +99,9 @@ GIT_CLONE_OPTS      ?=
 # set to 3 to use a 3-node galera sample
 GALERA_REPLICAS         ?=
 
+# Number of parallel kuttl test executions (default: 1 = no parallelism)
+KUTTL_TEST_PARALLEL ?= 1
+
 # OpenStack Operator
 OPENSTACK_IMG                ?= quay.io/openstack-k8s-operators/openstack-operator-index:${OPENSTACK_K8S_TAG}
 OPENSTACK_REPO               ?= https://github.com/openstack-k8s-operators/openstack-operator.git
@@ -1866,8 +1869,9 @@ kuttl_common_prep: validate_marketplace metallb kuttl_db_prep infra_rabbitmq_dep
 kuttl_common_cleanup: keystone_cleanup kuttl_db_cleanup metallb_cleanup
 
 .PHONY: keystone_kuttl_run
+keystone_kuttl_run: export KUTTL_PARALLEL = ${KUTTL_TEST_PARALLEL}
 keystone_kuttl_run: ## runs kuttl tests for the keystone operator, assumes that everything needed for running the test was deployed beforehand.
-	KEYSTONE_KUTTL_DIR=${KEYSTONE_KUTTL_DIR} kubectl-kuttl test --config ${KEYSTONE_KUTTL_CONF} ${KEYSTONE_KUTTL_DIR} --namespace ${NAMESPACE} $(KUTTL_ARGS)
+	KUTTL_DIR=${KEYSTONE_KUTTL_DIR} KUTTL_CONF=${KEYSTONE_KUTTL_CONF} NAMESPACE=${NAMESPACE} PARALLEL=${KUTTL_PARALLEL} KUTTL_ARGS="$(KUTTL_ARGS)" bash scripts/run-kuttl.sh
 
 .PHONY: keystone_kuttl
 keystone_kuttl: export NAMESPACE = ${KEYSTONE_KUTTL_NAMESPACE}
@@ -1881,6 +1885,23 @@ keystone_kuttl: kuttl_db_prep infra_rabbitmq_deploy keystone keystone_deploy_pre
 	make keystone_cleanup
 	make kuttl_db_cleanup
 	make infra_rabbitmq_deploy_cleanup
+	bash scripts/restore-namespace.sh
+
+.PHONY: keystone_kuttl_nitro
+keystone_kuttl_nitro: export NAMESPACE = ${KEYSTONE_KUTTL_NAMESPACE}
+keystone_kuttl_nitro:
+	$(eval $(call vars,$@,keystone))
+	make input
+	make -j2 --output-sync=target deploy_cleanup operator_namespace
+	IMAGE=${KEYSTONE_IMG} bash scripts/gen-olm.sh
+	oc apply -f ${OPERATOR_DIR}
+	make -j3 --output-sync=target infra rabbitmq mariadb
+	make keystone_deploy_prep
+	make -j3 --output-sync=target mariadb_deploy rabbitmq_deploy memcached_deploy
+	make wait
+
+	make deploy_cleanup
+	make -j5 --output-sync=target keystone_cleanup infra_cleanup mariadb_cleanup input_cleanup rabbitmq_cleanup
 	bash scripts/restore-namespace.sh
 
 .PHONY: barbican_kuttl_run
