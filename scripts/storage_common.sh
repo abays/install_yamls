@@ -22,16 +22,20 @@ data:
   create-storage.sh: |
     #!/bin/bash
 
+    PREFIX=""
+    if [ -n "\${STORAGE_ID}" ]; then PREFIX="\${STORAGE_ID}/"; fi
     for i in \`seq -w -s ' ' \${PV_NUM}\`; do
-      echo "creating dir /mnt/openstack/pv\$i on host"
-      mkdir -p /mnt/nodeMnt/openstack/pv\$i
+      echo "creating dir /mnt/openstack/\${PREFIX}pv\$i on host"
+      mkdir -p /mnt/nodeMnt/openstack/\${PREFIX}pv\$i
     done
   delete-storage.sh: |
     #!/bin/bash
 
+    PREFIX=""
+    if [ -n "\${STORAGE_ID}" ]; then PREFIX="\${STORAGE_ID}/"; fi
     for i in \`seq -w -s ' ' \${PV_NUM}\`; do
-      echo "deleting dir /mnt/openstack/pv\$i on host"
-      rm -rf /mnt/nodeMnt/openstack/pv\$i
+      echo "deleting dir /mnt/openstack/\${PREFIX}pv\$i on host"
+      rm -rf /mnt/nodeMnt/openstack/\${PREFIX}pv\$i
     done
 kind: ConfigMap
 metadata:

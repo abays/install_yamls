@@ -21,8 +21,12 @@ SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 PV_NUM=${PV_NUM:-12}
 TIMEOUT=${TIMEOUT:-300s}
 
-released=$(oc get pv -o json | jq -r '.items[] | select(.status.phase | test("Released")).metadata.name')
+LABEL_SELECTOR="provisioned-by=crc-devsetup"
+if [ -n "${STORAGE_ID}" ]; then
+    LABEL_SELECTOR="${LABEL_SELECTOR},crc-devsetup-storage-id=${STORAGE_ID}"
+fi
 
+released=$(oc get pv --selector "${LABEL_SELECTOR}" -o json | jq -r '.items[] | select(.status.phase | test("Released")).metadata.name')
 for name in $released; do
     oc patch pv -p '{"spec":{"claimRef": null}}' $name
 done

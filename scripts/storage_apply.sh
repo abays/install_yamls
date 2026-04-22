@@ -37,6 +37,8 @@ spec:
         env:
           - name: PV_NUM
             value: "${PV_NUM}"
+          - name: STORAGE_ID
+            value: "${STORAGE_ID}"
         command: ["bash"]
         args: ["/usr/local/bin/crc-storage.sh"]
         securityContext:
