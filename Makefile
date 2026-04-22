@@ -1856,31 +1856,42 @@ mariadb_kuttl: input deploy_cleanup infra mariadb mariadb_deploy_prep ## runs ku
 .PHONY: kuttl_db_prep
 kuttl_db_prep: input deploy_cleanup mariadb mariadb_deploy infra memcached_deploy ## installs common DB service(MariaDB and Memcached)
 
+.PHONY: kuttl_db_deploy_cleanup
+kuttl_db_deploy_cleanup: memcached_deploy_cleanup mariadb_deploy_cleanup input_cleanup
+
 .PHONY: kuttl_db_cleanup
-kuttl_db_cleanup: memcached_deploy_cleanup infra_cleanup mariadb_deploy_cleanup mariadb_cleanup input_cleanup
+kuttl_db_cleanup: kuttl_db_deploy_cleanup infra_cleanup mariadb_cleanup
 
 .PHONY: kuttl_common_prep
 kuttl_common_prep: validate_marketplace metallb kuttl_db_prep infra_rabbitmq_deploy keystone keystone_deploy ## installs common middleware services and Keystone
 
+.PHONY: kuttl_common_deploy_cleanup
+kuttl_common_deploy_cleanup: keystone_deploy_cleanup kuttl_db_deploy_cleanup
+
 .PHONY: kuttl_common_cleanup
-kuttl_common_cleanup: keystone_cleanup kuttl_db_cleanup metallb_cleanup
+kuttl_common_cleanup: kuttl_common_deploy_cleanup keystone_cleanup kuttl_db_cleanup metallb_cleanup
 
 .PHONY: keystone_kuttl_run
 keystone_kuttl_run: ## runs kuttl tests for the keystone operator, assumes that everything needed for running the test was deployed beforehand.
 	KEYSTONE_KUTTL_DIR=${KEYSTONE_KUTTL_DIR} kubectl-kuttl test --config ${KEYSTONE_KUTTL_CONF} ${KEYSTONE_KUTTL_DIR} --namespace ${NAMESPACE} $(KUTTL_ARGS)
 
+.PHONY: keystone_kuttl_prep
+keystone_kuttl_prep: kuttl_db_prep infra_rabbitmq_deploy keystone keystone_deploy_prep ## installs common middleware services and Keystone
+
+.PHONY: keystone_kuttl_deploy_cleanup
+keystone_kuttl_deploy_cleanup: deploy_cleanup kuttl_db_deploy_cleanup infra_rabbitmq_deploy_cleanup
+
+.PHONY: keystone_kuttl_cleanup
+keystone_kuttl_cleanup: keystone_kuttl_deploy_cleanup keystone_cleanup kuttl_db_cleanup
+
 .PHONY: keystone_kuttl
 keystone_kuttl: export NAMESPACE = ${KEYSTONE_KUTTL_NAMESPACE}
 # Set the value of $KEYSTONE_KUTTL_NAMESPACE if you want to run the keystone
 # kuttl tests in a namespace different than the default (keystone-kuttl-tests)
-keystone_kuttl: kuttl_db_prep infra_rabbitmq_deploy keystone keystone_deploy_prep ## runs kuttl tests for the keystone operator. Installs keystone operator and cleans up previous deployments before running the tests, add cleanup after running the tests.
+# Set KUTTL_PARALLEL_COUNT to run tests in parallel across multiple namespaces
+keystone_kuttl: ## runs kuttl tests for the keystone operator. Installs keystone operator and cleans up previous deployments before running the tests, add cleanup after running the tests.
 	$(eval $(call vars,$@,keystone))
-	make wait
-	make keystone_kuttl_run
-	make deploy_cleanup
-	make keystone_cleanup
-	make kuttl_db_cleanup
-	make infra_rabbitmq_deploy_cleanup
+	bash scripts/kuttl-runner.sh keystone $(KEYSTONE_KUTTL_DIR) $(KEYSTONE_KUTTL_NAMESPACE) $(KUTTL_PARALLEL_COUNT) $(KEYSTONE_KUTTL_CONF)
 	bash scripts/restore-namespace.sh
 
 .PHONY: barbican_kuttl_run
